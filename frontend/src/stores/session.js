@@ -1,4 +1,4 @@
-export const state = {profile: null, account: null, token: sessionStorage.getItem('token'), runId: null, datasetId: null, status: ''};
+export const state = {profile: null, account: null, token: sessionStorage.getItem('token'), runId: null, datasetId: null, remediationId: null, status: ''};
 
 export function session(token, account) {
   state.token = token;

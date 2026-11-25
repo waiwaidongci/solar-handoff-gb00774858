@@ -4,18 +4,22 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 
 from src.config.settings import ARTIFACTS
 from src.constants.enums import Role
-from src.controllers.query import delivery_status, jobs, recent_activity, require_row, revisions
+from src.controllers.query import (delivery_status, jobs, recent_activity, remediation_list, require_row,
+                                   revisions)
 from src.models.tables import datasets, runs
-from src.schemas.requests import Delivery, Import, Login, Review, Run
+from src.schemas.requests import Delivery, DeviceRef, Import, Login, Publish, Remediation, Review, Run
 from src.services.data import PROFILE, csv_records, save_revision
 from src.services.domain import sample_rows
-from src.services.workflow import add_run, cancel_schedule, review_run, schedule_report
+from src.services.workflow import (add_run, cancel_schedule, claim_remediation, create_remediation,
+                                   publish_remediation, recompute_remediation, release_remediation,
+                                   remediation_detail, review_run, schedule_report)
 from src.utils.exports import write_csv
 from src.utils.security import allowed, authenticate, signed_in
 
 router = APIRouter()
 analyst = allowed(Role.analyst.value)
 reviewer = allowed(Role.reviewer.value)
+operator = allowed(Role.analyst.value, Role.reviewer.value)
 
 
 @router.post('/login')
@@ -112,3 +116,62 @@ def report(key: int, account=Depends(signed_in)):
     path = ARTIFACTS / f"run-{key}-{run['started'].hex()}.csv"
     data = path.read_bytes() if path.exists() else write_csv(run['result']['rows'], run['result'].get('columns'))
     return download_csv(data, f"{PROFILE['title']}-{key}.csv")
+
+
+# --- 三区补检排班 ---------------------------------------------------------
+
+REMEDIATION_COLUMNS = ['设备', '分区', '班组', '安排时段（上海）', '工时（分钟）', '来源']
+
+
+def _remediation_rows(result):
+    labels = {'planned': '建议', 'claimed': '已接单', 'published': '已发布'}
+    rows = [{'设备': item['device'], '分区': item['zone'], '班组': item['crew'],
+             '安排时段（上海）': item['window'], '工时（分钟）': item['duration'],
+             '来源': labels.get(item['source'], item['source'])} for item in result['assignments']]
+    for item in result['unassigned']:
+        rows.append({'设备': item['device'], '分区': item['zone'], '班组': '—',
+                     '安排时段（上海）': '未排上', '工时（分钟）': '—',
+                     '来源': item['reason']})
+    return rows
+
+
+@router.get('/remediation')
+def list_remediation(account=Depends(signed_in)):
+    return {'plans': remediation_list()}
+
+
+@router.post('/remediation', status_code=201)
+def create_plan(body: Remediation, account=Depends(operator)):
+    return create_remediation(body.dataset_id, body.options, account['username'])
+
+
+@router.get('/remediation/{key}')
+def get_remediation(key: int, account=Depends(signed_in)):
+    return remediation_detail(key)
+
+
+@router.post('/remediation/{key}/recompute')
+def recompute_plan(key: int, account=Depends(operator)):
+    return recompute_remediation(key, account['username'])
+
+
+@router.post('/remediation/{key}/claims', status_code=201)
+def claim(key: int, body: DeviceRef, account=Depends(operator)):
+    return claim_remediation(key, body.device, account['username'])
+
+
+@router.delete('/remediation/{key}/claims/{device}')
+def release(key: int, device: str, account=Depends(operator)):
+    return release_remediation(key, device, account['username'])
+
+
+@router.post('/remediation/{key}/publish')
+def publish(key: int, body: Publish, account=Depends(operator)):
+    return publish_remediation(key, account['username'], body.revision)
+
+
+@router.get('/remediation/{key}/report.csv')
+def remediation_csv(key: int, account=Depends(signed_in)):
+    result = remediation_detail(key)
+    data = write_csv(_remediation_rows(result), REMEDIATION_COLUMNS)
+    return download_csv(data, f"补检排班-{result['shift_date']}-{key}.csv")

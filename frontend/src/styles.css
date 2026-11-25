@@ -46,6 +46,10 @@ textarea {min-height:95px;resize:vertical}
 #review {max-width:68ch}
 #revision,#pick-run {max-width:38rem}
 .table-wrap {overflow:auto;max-width:100%;border-block:1px solid var(--rule)}
+.chip {display:inline-block;padding:.15rem .55rem;border-radius:999px;font-size:.8rem;font-weight:650;border:1px solid var(--rule);background:var(--surface);white-space:nowrap}
+.chip-planned {border-color:var(--accent);color:var(--accent)}
+.chip-claimed {border-color:var(--highlight-edge);background:var(--highlight-edge);color:var(--side)}
+.chip-published {background:var(--accent);border-color:var(--accent);color:var(--button-ink)}
 table {width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;text-align:left}
 caption,th,td {padding:.65rem .75rem;line-height:1.42}
 th {white-space:nowrap;background:var(--surface);color:var(--quiet);font-weight:680}

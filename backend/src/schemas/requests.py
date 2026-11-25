@@ -28,3 +28,16 @@ class Delivery(BaseModel):
     recipient: str = Field(min_length=2, max_length=100)
     cadence: Literal['once', 'daily']
     scheduled_at: datetime | None = None
+
+
+class Remediation(BaseModel):
+    dataset_id: int = Field(gt=0)
+    options: dict = Field(default_factory=dict)
+
+
+class DeviceRef(BaseModel):
+    device: str = Field(min_length=1, max_length=60)
+
+
+class Publish(BaseModel):
+    revision: int | None = Field(default=None, ge=0)

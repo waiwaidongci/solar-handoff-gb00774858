@@ -21,6 +21,27 @@ deliveries = Table('report_deliveries', metadata, Column('id', Integer, primary_
                    Column('schedule_id', Integer, nullable=False), Column('run_id', Integer, nullable=False),
                    Column('recipient', String(100), nullable=False), Column('scheduled', Double, nullable=False),
                    Column('delivered', Double, nullable=False), UniqueConstraint('schedule_id', 'scheduled'))
+remediation_plans = Table('remediation_plans', metadata, Column('id', Integer, primary_key=True),
+                          Column('dataset_id', Integer, nullable=False, index=True),
+                          Column('shift_date', String(10), nullable=False, index=True),
+                          Column('options', JSON, nullable=False), Column('result', JSON),
+                          Column('revision', Integer, nullable=False), Column('state', String(16), nullable=False),
+                          Column('owner', String(40), nullable=False), Column('created', Double, nullable=False),
+                          Column('published', Double),
+                          UniqueConstraint('dataset_id', 'shift_date'))
+remediation_claims = Table('remediation_claims', metadata, Column('id', Integer, primary_key=True),
+                           Column('plan_id', Integer, nullable=False, index=True), Column('device', String(60), nullable=False),
+                           Column('zone', String(20), nullable=False), Column('crew', String(100), nullable=False),
+                           Column('start_minute', Integer, nullable=False), Column('end_minute', Integer, nullable=False),
+                           Column('owner', String(40), nullable=False), Column('created', Double, nullable=False),
+                           UniqueConstraint('plan_id', 'device'))
+remediation_dispatches = Table('remediation_dispatches', metadata, Column('id', Integer, primary_key=True),
+                               Column('plan_id', Integer, nullable=False, index=True), Column('device', String(60), nullable=False),
+                               Column('zone', String(20), nullable=False), Column('crew', String(100), nullable=False),
+                               Column('start_minute', Integer, nullable=False), Column('end_minute', Integer, nullable=False),
+                               Column('source', String(16), nullable=False), Column('revision', Integer, nullable=False),
+                               Column('created', Double, nullable=False),
+                               UniqueConstraint('plan_id', 'device'))
 audit = Table('operation_audit', metadata, Column('id', Integer, primary_key=True),
               Column('at', Double, nullable=False), Column('actor', String(40), nullable=False),
               Column('action', String(30), nullable=False), Column('subject', Integer, nullable=False))

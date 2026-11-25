@@ -40,9 +40,9 @@ def signed_in(credentials: HTTPAuthorizationCredentials = Depends(bearer)):
     return account
 
 
-def allowed(role):
+def allowed(*roles):
     def check(account=Depends(signed_in)):
-        if account['role'] != role:
+        if account['role'] not in roles:
             raise HTTPException(403, '当前角色无权执行此操作。')
         return account
     return check

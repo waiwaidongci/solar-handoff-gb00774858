@@ -64,8 +64,8 @@ def csv_records(text):
     return rows
 
 
-def parse_options(values):
-    fields = PROFILE['options']
+def parse_options(values, fields=None):
+    fields = fields if fields is not None else PROFILE['options']
     if set(values) - {field['key'] for field in fields}:
         raise ValueError('存在未定义的分析参数。')
     output = {}
